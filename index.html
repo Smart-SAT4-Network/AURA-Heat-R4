@@ -230,18 +230,36 @@
     <div class="coef-grid" id="coef-grid">
       <div class="coef-card">
         <div class="coef-name">β₀ (intercept)</div>
-        <div class="coef-val" id="b0-val">-14.3268</div>
+        <div class="coef-val" id="b0-val">-11.5269</div>
         <div class="coef-desc">Fitted จากยอดป่วยทั้งประเทศ</div>
       </div>
       <div class="coef-card">
         <div class="coef-name">β₁ (HI_t)</div>
-        <div class="coef-val">0.1748</div>
+        <div class="coef-val">0.1750</div>
         <div class="coef-desc">อ้างอิงงานวิจัย (Pudpong & Hajat 2011) Circulatory OPD visits เพิ่มขึ้น 19.1% ต่อทุกๆ 1 องศา ที่เกิน 29°C </div>
       </div>
       <div class="coef-card">
         <div class="coef-name">β₂ (HI_lag)</div>
-        <div class="coef-val" id="b2-val">0.2450</div>
+        <div class="coef-val" id="b2-val">0.1339</div>
         <div class="coef-desc">ความร้อนสะสมสัปดาห์ก่อน</div>
+      </div>
+      </div>
+      <div class="coef-card">
+        <div class="coef-name">β₃ (Wind)</div>
+        <div class="coef-val" id="b2-val">0.0959</div>
+        <div class="coef-desc">ความเร็วลมเฉลี่ย</div>
+      </div>
+      </div>
+      <div class="coef-card">
+        <div class="coef-name">β₄ (Rain)</div>
+        <div class="coef-val" id="b2-val">-0.0715</div>
+        <div class="coef-desc">ปริมาณน้ำฝนเฉลี่ย</div>
+      </div>
+       </div>
+      <div class="coef-card">
+        <div class="coef-name">β₅ (PM2.5)</div>
+        <div class="coef-val" id="b2-val">0.0050</div>
+        <div class="coef-desc"> อ้างอิงงานวิจัย WHO Global Air Quality Guidelines (2021) และ Brook R.D., et al. (2010). AHA Scientific Statement (RR ≈ 1.05 ต่อ 10 µg/m³)</div>
       </div>
       <div class="coef-card" style="border-color: var(--accent3);">
         <div class="coef-name" style="color: var(--accent3);">Model Error (RMSE / MAE)</div>
