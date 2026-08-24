@@ -194,8 +194,7 @@
     
     <div class="formula" id="formula-display">
       <div style="color: var(--muted); font-size: 11px; margin-bottom: 8px; border-bottom: 1px dashed var(--border); padding-bottom: 8px; line-height: 1.6;">
-        ln(λ<sub>national</sub>) = β₀ + β₁(HI<sub>t</sub>) + β₂(HI<sub>t-1</sub>) + β₃(Wind<sub>t</sub>) + β₄(Rain<sub>t</sub>) + β₅(PM2.5<sup>*</sup><sub>t</sub>)<br>
-        <span style="font-size: 10px; opacity: 0.8;"><em>* โดยที่ PM2.5<sup>*</sup><sub>t</sub> = max(0, PM2.5<sub>t</sub> - 37.5)</em></span><br>
+        ln(λ<sub>national</sub>) = β₀ + β₁(HI<sub>t</sub>) + β₂(HI<sub>t-1</sub>) + β₃(Wind<sub>t</sub>) + β₄(Rain<sub>t</sub>) + β₅(PM2.5<sub>t</sub>)<br>
         λ<sub>national</sub> = exp( ln(λ<sub>national</sub>) )<br>
         λ<sub>region4</sub> = λ<sub>national</sub> × (ประชากรเขต 4 / ประชากรประเทศ)
       </div>
@@ -203,9 +202,10 @@
         <span style="color: var(--muted);">กำลังโหลดพารามิเตอร์ของโมเดล...</span>
       </div>
     </div>
-   <div class="coef-wrapper" style="margin-top: 1.5em; margin-bottom: 2em;">
-  <!-- หัวข้อ -->
-  <h3 class="coef-header">คำอธิบายสมการ</h3>
+
+    <div class="coef-wrapper" style="margin-top: 1.5em; margin-bottom: 2em;">
+      <!-- หัวข้อ -->
+      <h3 class="coef-header">คำอธิบายสมการ</h3>
 
   <!-- ส่วนอ้างอิงและบริบท (จุดที่ 1: แก้ margin-top จาก -6px เป็น 12px ให้เว้นระยะใต้หัวข้อ) -->
   <div style="font-size: 11.5px; color: var(--muted); line-height: 1.6; margin-top: 12px; margin-bottom: 24px; padding-left: 4px; font-family: var(--sans);">
@@ -453,7 +453,7 @@ function calcLambdaDaily(hi, hiLag, wind, rainDay, pm25) {
                    (coefHILag * hiL) + 
                    (coefWind * wV) + 
                    (coefRain * rV) + 
-                   (coefPM25 * Math.max(0, pmV - 37.5));
+                   (coefPM25 * pmV);
 
   const lambdaWeekNational = Math.exp(lnLambda);
   const lambdaWeekRegion4 = lambdaWeekNational * SCALE_FACTOR;
