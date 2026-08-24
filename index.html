@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AURA Heat R4 · ระบบเฝ้าระวังความร้อน เขตสุขภาพที่ 4 </title>
+<title>AURA Heat R4 · ระบบเฝ้าระวังความร้อน เขตสุขภาพที่ 4</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -64,6 +64,7 @@
     border: 1px solid var(--accent2); color: var(--accent2); background: rgba(0, 0, 0, 0.85);
     display: flex; align-items: center; gap: 8px; box-shadow: 0 0 8px rgba(0,0,0,0.5);
   }
+  .status-logo { height: 32px; width: auto; object-fit: contain; }
 
   main { position: relative; z-index: 1; padding: 24px 32px 60px; max-width: 1600px; margin: 0 auto; }
 
@@ -101,7 +102,7 @@
 
   .formula { background: var(--bg); border: 1px solid var(--border); border-left: 3px solid var(--accent2); border-radius: 6px; padding: 14px 18px; font-family: var(--mono); font-size: 13px; color: var(--accent2); margin: 16px 0; overflow-x: auto; white-space: nowrap; }
 
-  #loading-overlay { position: fixed; inset: 0; z-index: 999; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; }
+  #loading-overlay { position: fixed; inset: 0; z-index: 999; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; transition: opacity 0.4s ease; }
   .loading-icon { font-size: 48px; animation: spin 2s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .loading-text { font-family: var(--mono); color: var(--accent2); font-size: 14px; }
@@ -113,16 +114,6 @@
   .footnote strong { color: var(--text); }
 
   .health-table-wrap { overflow-x: auto; margin-top: 20px; border-radius: 8px; border: 1px solid var(--border); }
-  .health-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  .health-table th, .health-table td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); }
-  .health-table th { background: #222; color: #fff; text-align: center;}
-  .health-table td:last-child, .health-table th:last-child { border-right: none;}
-  .health-table tr:last-child td { border-bottom: none;}
-  
-  .lv-watch { background-color: #a3cc28; color: #000; font-weight: bold; text-align: center;}
-  .lv-warn { background-color: #ffe600; color: #000; font-weight: bold; text-align: center;}
-  .lv-danger { background-color: #ff8c00; color: #000; font-weight: bold; text-align: center;}
-  .lv-critical { background-color: #ff3b3b; color: #000; font-weight: bold; text-align: center;}
 
   #map-container { width: 100%; height: 400px; border-radius: 12px; border: 1px solid var(--border); z-index: 10; }
   .leaflet-popup-content-wrapper { background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 8px; }
@@ -130,10 +121,11 @@
   .map-popup-title { font-weight: bold; color: var(--accent2); margin-bottom: 5px;}
   .map-popup-text { font-size: 12px; margin-bottom: 3px;}
 
-  @media (max-width: 600px) {
+  @media (max-width: 768px) {
     main { padding: 16px; }
     header { padding: 10px 16px; }
     .kpi-value { font-size: 24px; }
+    .env-grid { grid-template-columns: 1fr !important; }
   }
 </style>
 </head>
@@ -200,17 +192,17 @@
     <div class="section-label">MODEL SPECIFICATION</div>
     <div class="section-title">สมการ Negative Binomial Regression (Hybrid Model)</div>
     
-  <div class="formula" id="formula-display">
-    <div style="color: var(--muted); font-size: 11px; margin-bottom: 8px; border-bottom: 1px dashed var(--border); padding-bottom: 8px; line-height: 1.6;">
-      ln(λ<sub>national</sub>) = β₀ + β₁(HI<sub>t</sub>) + β₂(HI<sub>t-1</sub>) + β₃(Wind<sub>t</sub>) + β₄(Rain<sub>t</sub>) + β₅(PM2.5<sup>*</sup><sub>t</sub>)<br>
-      <span style="font-size: 10px; opacity: 0.8;"><em>* โดยที่ PM2.5<sup>*</sup><sub>t</sub> = max(0, PM2.5<sub>t</sub> - 37.5)</em></span><br>
-      λ<sub>national</sub> = exp( ln(λ<sub>national</sub>) )<br>
-      λ<sub>region4</sub> = λ<sub>national</sub> × (ประชากรเขต 4 / ประชากรประเทศ)
+    <div class="formula" id="formula-display">
+      <div style="color: var(--muted); font-size: 11px; margin-bottom: 8px; border-bottom: 1px dashed var(--border); padding-bottom: 8px; line-height: 1.6;">
+        ln(λ<sub>national</sub>) = β₀ + β₁(HI<sub>t</sub>) + β₂(HI<sub>t-1</sub>) + β₃(Wind<sub>t</sub>) + β₄(Rain<sub>t</sub>) + β₅(PM2.5<sup>*</sup><sub>t</sub>)<br>
+        <span style="font-size: 10px; opacity: 0.8;"><em>* โดยที่ PM2.5<sup>*</sup><sub>t</sub> = max(0, PM2.5<sub>t</sub> - 37.5)</em></span><br>
+        λ<sub>national</sub> = exp( ln(λ<sub>national</sub>) )<br>
+        λ<sub>region4</sub> = λ<sub>national</sub> × (ประชากรเขต 4 / ประชากรประเทศ)
+      </div>
+      <div id="formula-concrete" style="line-height: 1.8;">
+        <span style="color: var(--muted);">กำลังโหลดพารามิเตอร์ของโมเดล...</span>
+      </div>
     </div>
-    <div id="formula-concrete" style="line-height: 1.8;">
-      <span style="color: var(--muted);">กำลังโหลดพารามิเตอร์ของโมเดล...</span>
-    </div>
-  </div>
 
     <div style="font-size: 11.5px; color: var(--muted); line-height: 1.6; margin-top: -6px; margin-bottom: 20px; padding-left: 4px; font-family: var(--sans);">
       <span style="color: var(--accent2); font-family: var(--mono);">[β₁] อ้างอิง Heat Index:</span>
@@ -226,40 +218,38 @@
   
       <span style="color: var(--accent2); font-family: var(--mono);">[Context:]</span> ใช้สภาพอากาศของเขตสุขภาพที่ 4 (ภาคกลาง) เป็นตัวแทนเพื่อทำนายผู้ป่วยระดับประเทศ<br>
     </div>
-    
     <div class="coef-grid" id="coef-grid">
-      <div class="coef-card">
-        <div class="coef-name">β₀ (intercept)</div>
-        <div class="coef-val" id="b0-val">-11.5269</div>
-        <div class="coef-desc">Fitted จากยอดป่วยทั้งประเทศ</div>
-      </div>
-      <div class="coef-card">
-        <div class="coef-name">β₁ (HI_t)</div>
-        <div class="coef-val">0.1750</div>
-        <div class="coef-desc">อ้างอิงงานวิจัย (Pudpong & Hajat 2011) Circulatory OPD visits เพิ่มขึ้น 19.1% ต่อทุกๆ 1 องศา ที่เกิน 29°C </div>
-      </div>
-      <div class="coef-card">
-        <div class="coef-name">β₂ (HI_lag)</div>
-        <div class="coef-val" id="b2-val">0.1339</div>
-        <div class="coef-desc">ความร้อนสะสมสัปดาห์ก่อน</div>
-      </div>
-      </div>
-      <div class="coef-card">
-        <div class="coef-name">β₃ (Wind)</div>
-        <div class="coef-val" id="b2-val">0.0959</div>
-        <div class="coef-desc">ความเร็วลมเฉลี่ย</div>
-      </div>
-      </div>
-      <div class="coef-card">
-        <div class="coef-name">β₄ (Rain)</div>
-        <div class="coef-val" id="b2-val">-0.0715</div>
-        <div class="coef-desc">ปริมาณน้ำฝนเฉลี่ย</div>
-      </div>
-       </div>
-      <div class="coef-card">
-        <div class="coef-name">β₅ (PM2.5)</div>
-        <div class="coef-val" id="b2-val">0.0050</div>
-        <div class="coef-desc"> อ้างอิงงานวิจัย WHO Global Air Quality Guidelines (2021) และ Brook R.D., et al. (2010). AHA Scientific Statement (RR ≈ 1.05 ต่อ 10 µg/m³)</div>
+  <div class="coef-card">
+    <div class="coef-name">HI</div>
+    <div class="coef-val" id="hi-val">-</div>
+    <div class="coef-desc">ค่าดัชนีความร้อน Heat Index (°C) จาก Open-Meteo API</div>
+  </div>
+  <div class="coef-card">
+    <div class="coef-name">HI_Lag</div>
+    <div class="coef-val" id="hi-lag-val">-</div>
+    <div class="coef-desc">ค่าดัชนีความร้อนก่อนหน้า Heat Index Lag 1 สัปดาห์ (°C) จาก Open-Meteo API</div>
+  </div>
+  <div class="coef-card">
+    <div class="coef-name">Wind</div>
+    <div class="coef-val" id="wind-val">-</div>
+    <div class="coef-desc">ความเร็วลม (km/h) จาก Open-Meteo API</div>
+  </div>
+  <div class="coef-card">
+    <div class="coef-name">Sun</div>
+    <div class="coef-val" id="sun-val">-</div>
+    <div class="coef-desc">จำนวนชั่วโมงแสงแดด (hr) จาก Open-Meteo API</div>
+  </div>
+  <div class="coef-card">
+    <div class="coef-name">Rain</div>
+    <div class="coef-val" id="rain-val">-</div>
+    <div class="coef-desc">ปริมาณน้ำฝนเฉลี่ย (MM) จาก Open-Meteo API</div>
+  </div>
+  <div class="coef-card">
+    <div class="coef-name">PM2.5</div>
+    <div class="coef-val" id="pm25-val">-</div>
+    <div class="coef-desc">ปริมาณ PM2.5 (µg/m³) จาก WAQI API</div>
+  </div>
+</div>
       </div>
       <div class="coef-card" style="border-color: var(--accent3);">
         <div class="coef-name" style="color: var(--accent3);">Model Error (RMSE / MAE)</div>
@@ -280,47 +270,48 @@
     </div>
     <div id="plot-heat" class="chart-plot tall"></div>
   </div>
-<div class="section-label">Risk Levels</div> 
-<div class="section-title"> เกณฑ์ระดับผลกระทบต่อสุขภาพ </div>  
-<div class="health-table-wrap" style="border-radius: 8px; overflow: hidden; border: 1px solid #333; margin-top: 20px;">
-      <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; font-family: var(--sans);">
-          <thead>
-              <tr style="background-color: #2b2b2b; color: #ffffff; text-align: center;">
-                  <th style="padding: 14px 12px; width: 15%; border-right: 1px solid #444; font-weight: 600;">ระดับ</th>
-                  <th style="padding: 14px 12px; width: 20%; border-right: 1px solid #444; font-weight: 600;">ดัชนีความร้อน (°C)</th>
-                  <th style="padding: 14px 12px; width: 65%; font-weight: 600;">ผลกระทบต่อสุขภาพ</th>
-              </tr>
-          </thead>
-          <tbody>
-              <tr style="background-color: #b5d522; color: #111;">
-                  <td style="padding: 12px; text-align: center; font-weight: 700; border-right: 1px solid rgba(0,0,0,0.1); border-bottom: 1px solid rgba(0,0,0,0.1);">เฝ้าระวัง</td>
-                  <td style="padding: 12px; text-align: center; font-weight: 700; border-right: 1px solid rgba(0,0,0,0.1); border-bottom: 1px solid rgba(0,0,0,0.1); font-size: 16px;">27.0 - 32.9</td>
-                  <td style="padding: 12px; border-bottom: 1px solid rgba(0,0,0,0.1);">เมื่อสัมผัสความร้อน และทำกิจกรรมกลางแจ้งเป็นเวลานาน อาจทำให้ร่างกายเกิดอาการเบื้องต้น เช่น อ่อนเพลีย ปวดศีรษะ ผื่นจากความร้อน บวมจากความร้อน ปวดเมื่อยตามร่างกาย นำไปสู่การเกิดตะคริวจากความร้อนได้</td>
-              </tr>
-              <tr style="background-color: #ffea00; color: #111;">
-                  <td style="padding: 12px; text-align: center; font-weight: 700; border-right: 1px solid rgba(0,0,0,0.1); border-bottom: 1px solid rgba(0,0,0,0.1);">เตือนภัย</td>
-                  <td style="padding: 12px; text-align: center; font-weight: 700; border-right: 1px solid rgba(0,0,0,0.1); border-bottom: 1px solid rgba(0,0,0,0.1); font-size: 16px;">33.0 - 41.9</td>
-                  <td style="padding: 12px; border-bottom: 1px solid rgba(0,0,0,0.1);">เมื่อสัมผัสความร้อน และทำกิจกรรมกลางแจ้งเป็นเวลานาน อาจมีความเสี่ยงที่จะเกิดโรคเพลียแดด (Heat exhaustion) และเป็นตะคริวจากความร้อนได้ และอาจส่งผลให้เกิดโรคลมร้อน หรือ ฮีทสโตรก (Heat stroke)</td>
-              </tr>
-              <tr style="background-color: #ff8800; color: #111;">
-                  <td style="padding: 12px; text-align: center; font-weight: 700; border-right: 1px solid rgba(0,0,0,0.1); border-bottom: 1px solid rgba(0,0,0,0.1);">อันตราย</td>
-                  <td style="padding: 12px; text-align: center; font-weight: 700; border-right: 1px solid rgba(0,0,0,0.1); border-bottom: 1px solid rgba(0,0,0,0.1); font-size: 16px;">42.0 - 51.9</td>
-                  <td style="padding: 12px; border-bottom: 1px solid rgba(0,0,0,0.1);">เมื่อสัมผัสความร้อน และทำกิจกรรมกลางแจ้งเป็นเวลานาน อาจทำให้เป็นตะคริวจากความร้อน และเกิดโรคเพลียแดดจากความร้อน (Heat exhaustion) และเพิ่มความเสี่ยงต่อการเกิดโรคลมร้อน หรือ ฮีทสโตรก (Heat stroke) ได้ หากสัมผัสความร้อนอย่างต่อเนื่อง</td>
-              </tr>
-              <tr style="background-color: #ff3322; color: #111;">
-                  <td style="padding: 12px; text-align: center; font-weight: 700; border-right: 1px solid rgba(0,0,0,0.1);">อันตรายมาก</td>
-                  <td style="padding: 12px; text-align: center; font-weight: 700; border-right: 1px solid rgba(0,0,0,0.1); font-size: 16px;">>= 52.0</td>
-                  <td style="padding: 12px;">เมื่อสัมผัสความร้อน และทำกิจกรรมกลางแจ้งเป็นเวลานานอย่างต่อเนื่อง มีความ<span style="text-decoration: underline; font-weight: 700;">เสี่ยงสูงมาก</span>ที่เกิดโรคลมร้อน หรือ ฮีทสโตรก (Heat stroke)</td>
-              </tr>
-          </tbody>
-      </table> 
-  <div>
-        <div class="chart-subtitle">ที่มา:กรมอนามัย</div>
+
+  <div class="section-label">Risk Levels</div> 
+  <div class="section-title">เกณฑ์ระดับผลกระทบต่อสุขภาพ</div>  
+  <div class="health-table-wrap">
+    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; font-family: var(--sans);">
+        <thead>
+            <tr style="background-color: #2b2b2b; color: #ffffff; text-align: center;">
+                <th style="padding: 14px 12px; width: 15%; border-right: 1px solid #444; font-weight: 600;">ระดับ</th>
+                <th style="padding: 14px 12px; width: 20%; border-right: 1px solid #444; font-weight: 600;">ดัชนีความร้อน (°C)</th>
+                <th style="padding: 14px 12px; width: 65%; font-weight: 600;">ผลกระทบต่อสุขภาพ</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr style="background-color: #b5d522; color: #111;">
+                <td style="padding: 12px; text-align: center; font-weight: 700; border-right: 1px solid rgba(0,0,0,0.1); border-bottom: 1px solid rgba(0,0,0,0.1);">เฝ้าระวัง</td>
+                <td style="padding: 12px; text-align: center; font-weight: 700; border-right: 1px solid rgba(0,0,0,0.1); border-bottom: 1px solid rgba(0,0,0,0.1); font-size: 16px;">27.0 - 32.9</td>
+                <td style="padding: 12px; border-bottom: 1px solid rgba(0,0,0,0.1);">เมื่อสัมผัสความร้อน และทำกิจกรรมกลางแจ้งเป็นเวลานาน อาจทำให้ร่างกายเกิดอาการเบื้องต้น เช่น อ่อนเพลีย ปวดศีรษะ ผื่นจากความร้อน บวมจากความร้อน ปวดเมื่อยตามร่างกาย นำไปสู่การเกิดตะคริวจากความร้อนได้</td>
+            </tr>
+            <tr style="background-color: #ffea00; color: #111;">
+                <td style="padding: 12px; text-align: center; font-weight: 700; border-right: 1px solid rgba(0,0,0,0.1); border-bottom: 1px solid rgba(0,0,0,0.1);">เตือนภัย</td>
+                <td style="padding: 12px; text-align: center; font-weight: 700; border-right: 1px solid rgba(0,0,0,0.1); border-bottom: 1px solid rgba(0,0,0,0.1); font-size: 16px;">33.0 - 41.9</td>
+                <td style="padding: 12px; border-bottom: 1px solid rgba(0,0,0,0.1);">เมื่อสัมผัสความร้อน และทำกิจกรรมกลางแจ้งเป็นเวลานาน อาจมีความเสี่ยงที่จะเกิดโรคเพลียแดด (Heat exhaustion) และเป็นตะคริวจากความร้อนได้ และอาจส่งผลให้เกิดโรคลมร้อน หรือ ฮีทสโตรก (Heat stroke)</td>
+            </tr>
+            <tr style="background-color: #ff8800; color: #111;">
+                <td style="padding: 12px; text-align: center; font-weight: 700; border-right: 1px solid rgba(0,0,0,0.1); border-bottom: 1px solid rgba(0,0,0,0.1);">อันตราย</td>
+                <td style="padding: 12px; text-align: center; font-weight: 700; border-right: 1px solid rgba(0,0,0,0.1); border-bottom: 1px solid rgba(0,0,0,0.1); font-size: 16px;">42.0 - 51.9</td>
+                <td style="padding: 12px; border-bottom: 1px solid rgba(0,0,0,0.1);">เมื่อสัมผัสความร้อน และทำกิจกรรมกลางแจ้งเป็นเวลานาน อาจทำให้เป็นตะคริวจากความร้อน และเกิดโรคเพลียแดดจากความร้อน (Heat exhaustion) และเพิ่มความเสี่ยงต่อการเกิดโรคลมร้อน หรือ ฮีทสโตรก (Heat stroke) ได้ หากสัมผัสความร้อนอย่างต่อเนื่อง</td>
+            </tr>
+            <tr style="background-color: #ff3322; color: #111;">
+                <td style="padding: 12px; text-align: center; font-weight: 700; border-right: 1px solid rgba(0,0,0,0.1);">อันตรายมาก</td>
+                <td style="padding: 12px; text-align: center; font-weight: 700; border-right: 1px solid rgba(0,0,0,0.1); font-size: 16px;">&gt;= 52.0</td>
+                <td style="padding: 12px;">เมื่อสัมผัสความร้อน และทำกิจกรรมกลางแจ้งเป็นเวลานานอย่างต่อเนื่อง มีความ<span style="text-decoration: underline; font-weight: 700;">เสี่ยงสูงมาก</span>ที่เกิดโรคลมร้อน หรือ ฮีทสโตรก (Heat stroke)</td>
+            </tr>
+        </tbody>
+    </table> 
   </div>
+  <div style="margin-top: 6px; margin-bottom: 24px;">
+    <div class="chart-subtitle">ที่มา: กรมอนามัย</div>
   </div>
   
   <div class="section-title">📊 ตัวแปรสิ่งแวดล้อมที่เกี่ยวข้อง (รายวัน) และ PM2.5 จาก WAQI</div>
-  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+  <div class="env-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
       <div class="chart-wrap" style="margin-bottom: 0;">
         <div id="plot-env" class="chart-plot" style="height: 300px;"></div>
       </div>
@@ -343,7 +334,7 @@
     <div id="plot-patient" class="chart-plot tall"></div>
   </div>
 
- <div class="footnote">
+  <div class="footnote">
     <strong>แหล่งข้อมูล:</strong>
     World Air Quality Index / WAQI (PM2.5) ·
     DDS กรมควบคุมโรค (ข้อมูลผู้ป่วยระดับประเทศ ปี 2568–2569) <br>
@@ -373,10 +364,9 @@
 // ═══════════════════════════════════════════════════════════
 const WAQI_TOKEN   = 'd128f19a81ec49b868126c970ca3c6ab501c8b52';
 
-// อัปเดตข้อมูลประชากร อ้างอิงประกาศกรมการปกครอง สิ้นปี 2568
 const POP_NATIONAL = 65809011; 
 const POP_REGION4  = 5448024;  
-const SCALE_FACTOR = POP_REGION4 / POP_NATIONAL; // ≈ 0.08278 (8.27% ของประเทศ)
+const SCALE_FACTOR = POP_REGION4 / POP_NATIONAL;
 
 const LOCATIONS = {
   'นนทบุรี':    [13.8591, 100.5217],
@@ -395,11 +385,11 @@ const PROV_POP_RATIO = {
 };
 
 const WAQI_STATIONS = [
-  { name:'นนทบุรี',  query:'nonthaburi'   },
+  { name:'นนทบุรี', query:'nonthaburi' },
   { name:'ปทุมธานี', query:'pathum-thani' },
-  { name:'อยุธยา',   query:'ayutthaya'    },
-  { name:'สระบุรี',  query:'saraburi'     },
-  { name:'ลพบุรี',   query:'lopburi'      }
+  { name:'อยุธยา', query:'ayutthaya' },
+  { name:'สระบุรี', query:'saraburi' },
+  { name:'ลพบุรี', query:'lopburi' }
 ];
 
 // ═══════════════════════════════════════════════════════════
@@ -424,7 +414,7 @@ function calcLambdaDaily(hi, hiLag, wind, rainDay, pm25) {
   const coefHILag = 0.1339;   
   const coefWind  = 0.0959;   
   const coefRain  = -0.0715;  
-  const coefPM25  = 0.0050;    
+  const coefPM25  = 0.0050;   
   
   const hiV  = hi;
   const hiL  = hiLag  ?? hi;
@@ -439,10 +429,7 @@ function calcLambdaDaily(hi, hiLag, wind, rainDay, pm25) {
                    (coefRain * rV) + 
                    (coefPM25 * Math.max(0, pmV - 37.5));
 
-  // ค่าระดับประเทศ (National)
   const lambdaWeekNational = Math.exp(lnLambda);
-  
-  // ค่าระดับเขต 4 (ทอนสัดส่วน 8.27%)
   const lambdaWeekRegion4 = lambdaWeekNational * SCALE_FACTOR;
 
   return {
@@ -526,9 +513,8 @@ async function main() {
     `+ <span style="color:#00c8ff">0.0050</span>(PM2.5)`;
   document.getElementById('formula-concrete').innerHTML = formulaStr;
 
-  // ── [แก้ไขที่ 3] ขยายขนาดโลโก้ SAT ทางด้านขวาให้โดดเด่นขึ้น ──
   const statusEl = document.getElementById('model-status');
-  statusEl.innerHTML = `<img src="smart_sat_logo.png" class="status-logo" alt="SAT Logo" style="height: 38px; width: auto; margin-right: 8px;"> <span style="font-size: 12px; font-weight: bold;">ตรวจจับเร็ว-ตอบโต้ทัน-ป้องกันได้</span>`;
+  statusEl.innerHTML = `<img src="smart_sat_logo.png" class="status-logo" alt="SAT Logo"> <span style="font-size: 12px; font-weight: bold;">ตรวจจับเร็ว-ตอบโต้ทัน-ป้องกันได้</span>`;
   statusEl.style.borderColor = '#00ff88'; 
   statusEl.style.color = '#00ff88'; 
   statusEl.style.boxShadow = '0 0 12px rgba(0, 255, 136, 0.2)';
@@ -558,7 +544,6 @@ async function main() {
     document.getElementById('kpi-lambda-r4').textContent  = todayData.lambdaR4?.toFixed(2) ?? '--';
     document.getElementById('kpi-lambda-nat').textContent = todayData.lambdaNat?.toFixed(1) ?? '--';
     
-    // แบ่งยอดลงแผนที่
     for (const prov in dailyByProv) {
         if (todayData.lambdaR4 > 0) dailyByProv[prov].todayLambda = todayData.lambdaR4 * (PROV_POP_RATIO[prov] || 0.125);
     }
@@ -582,114 +567,86 @@ async function main() {
 
   // PLOTS
   const COLORS = ['#ff6b1a','#00c8ff','#ffe04b','#a78bfa','#34d399','#fb7185','#60a5fa','#f97316'];
-  const nowISO = new Date().toISOString().slice(0,16);
+  const layoutBase = {
+    paper_bgcolor: 'transparent',
+    plot_bgcolor: 'rgba(255,255,255,.02)',
+    font: { color: '#8899aa', family: 'Sarabun' },
+    margin: { t: 30, r: 20, b: 40, l: 40 }
+  };
 
+  // 1. Plot Heat (Hourly Forecast)
   Plotly.newPlot('plot-heat', hourlyByProv.map((p, i) => ({
-    x: p.times, y: p.temps, type:'scatter', mode:'lines', name: p.name,
-    line:{ color: COLORS[i % COLORS.length], width:1.5, shape:'spline' }, hovertemplate: `%{y:.1f}°C<extra>${p.name}</extra>`
+    x: p.times, y: p.temps, type: 'scatter', mode: 'lines', name: p.name,
+    line: { color: COLORS[i % COLORS.length], width: 1.5, shape: 'spline' },
+    hovertemplate: `%{y:.1f}°C<extra>${p.name}</extra>`
   })), {
-    paper_bgcolor:'transparent', plot_bgcolor:'rgba(255,255,255,.02)', font:{ color:'#8899aa', family: 'Sarabun' },
-    hovermode:'x unified', legend:{ orientation:'h', y:-0.12 },
-    xaxis:{ gridcolor:'#1e2535', tickformat:'%d %b %H:%M', tickfont:{size:11} }, yaxis:{ gridcolor:'#1e2535', title:'°C', tickfont:{size:11} },
-    margin:{ l:50, r:20, t:10, b:80 },
-    shapes:[ { type:'line', x0:0, x1:1, xref:'paper', y0:40, y1:40, line:{color:'#ff3b3b',width:2,dash:'dash'} }, { type:'line', x0:nowISO, x1:nowISO, yref:'paper', y0:0, y1:1, line:{color:'#ffffff',width:1,dash:'dot'} } ]
-  }, { responsive: true, displayModeBar: false });
-
-  // ── [แก้ไขที่ 2] นำกราฟ Sun, UV, และ Rain (Bar) กลับมาพล็อตให้ครบถ้วน ──
-  const envTraces = [
-    { name:'ความชื้น (%)', data: daily.map(d=>d.rh), color:'#00c8ff', yaxis:'y1' },
-    { name:'ลม (km/h)', data: daily.map(d=>d.wind), color:'#34d399', yaxis:'y2' },
-    { name:'แสงแดด (hr)', data: daily.map(d=>d.sun), color:'#ffe04b', yaxis:'y2' },
-    { name:'UV Index', data: daily.map(d=>d.uv), color:'#a78bfa', yaxis:'y2' }
-  ].map(t => ({
-    x: daily.map(d=>d.date), y: t.data, type:'scatter', mode:'lines+markers', name: t.name, yaxis: t.yaxis,
-    line:{ color:t.color, width:2, shape:'spline' }, marker:{ size:4 }, hovertemplate:`%{y:.1f}<extra>${t.name}</extra>`
-  }));
-  
-  // เพิ่มแท่งกราฟฝน (คูณสเกลภาพให้เห็นชัดเจนบนแกน 0-100 แต่ไม่กระทบสมการ)
-  envTraces.push({
-    x: daily.map(d=>d.date), y: daily.map(d=>d.rain * 15),
-    type:'bar', name:'ฝนตก', yaxis:'y1',
-    marker:{ color:'rgba(0,180,255,.25)', line:{color:'rgba(0,180,255,.5)',width:1} },
-    hovertemplate:`%{x}<br>ฝนตก<extra></extra>`
+    ...layoutBase,
+    hovermode: 'x unified',
+    legend: { orientation: 'h', y: -0.15 },
+    xaxis: { gridcolor: '#1e2535', tickformat: '%d %b %H:%M', tickfont: { size: 11 } },
+    yaxis: { gridcolor: '#1e2535', title: 'Apparent Temp (°C)' },
+    shapes: [
+      { type: 'line', x0: startStr, x1: endStr, y0: 40, y1: 40, line: { color: '#ff3b3b', width: 1.5, dash: 'dot' } },
+      { type: 'line', x0: todayStr, x1: todayStr, y0: 0, y1: 60, line: { color: '#ffffff', width: 1, dash: 'dash' } }
+    ]
   });
 
-  Plotly.newPlot('plot-env', envTraces, {
-    paper_bgcolor:'transparent', plot_bgcolor:'rgba(255,255,255,.02)', font:{ color:'#8899aa', family:'Sarabun' },
-    hovermode:'x unified', barmode:'overlay', legend:{ orientation:'h', y:-0.2 },
-    xaxis:{ gridcolor:'#1e2535', tickfont:{size:10} }, 
-    yaxis:{ gridcolor:'#1e2535', title:'%', tickfont:{size:10}, side:'left' }, 
-    yaxis2:{ overlaying:'y', side:'right', title:'ลม/แดด/UV', gridcolor:'transparent', tickfont:{size:10} },
-    margin:{ l:40, r:40, t:10, b:60 },
-    shapes:[{ type:'line', x0:todayStr, x1:todayStr, yref:'paper', y0:0, y1:1, line:{color:'#ffffff',width:1,dash:'dot'} }]
-  }, { responsive:true, displayModeBar:false });
+  // 2. Plot Env (Daily Environmental Factors)
+  Plotly.newPlot('plot-env', [
+    { x: daily.map(d => d.date), y: daily.map(d => d.rh), name: 'ความชื้น (%)', type: 'scatter', mode: 'lines+markers', line: { color: '#00c8ff' } },
+    { x: daily.map(d => d.date), y: daily.map(d => d.wind), name: 'ความเร็วลม (km/h)', type: 'scatter', mode: 'lines+markers', line: { color: '#ffe04b' } },
+    { x: daily.map(d => d.date), y: daily.map(d => d.uv), name: 'UV Index', type: 'scatter', mode: 'lines+markers', line: { color: '#a78bfa' } }
+  ], {
+    ...layoutBase,
+    title: { text: 'ตัวแปรอุตุนิยมวิทยาเฉลี่ยรายวัน', font: { size: 13, color: '#dce4f0' } },
+    hovermode: 'x unified',
+    legend: { orientation: 'h', y: -0.2 },
+    xaxis: { gridcolor: '#1e2535' },
+    yaxis: { gridcolor: '#1e2535' }
+  });
 
+  // 3. Plot PM2.5 (WAQI Realtime Stations)
   Plotly.newPlot('plot-pm25', [{
-    x: pm25History.map(d=>d.city), y: pm25History.map(d=>d.value), type:'bar',
-    marker:{ color: pm25History.map(d => d.value < 25 ? '#34d399' : d.value < 50 ? '#ffe04b' : d.value < 75 ? '#ff8c00' : '#ff3b3b') },
-    text: pm25History.map(d=>`${d.value}`), textposition:'outside', hovertemplate:'%{x}<br>PM2.5: %{y}<extra></extra>'
+    x: pm25History.map(d => d.name),
+    y: pm25History.map(d => d.value),
+    type: 'bar',
+    marker: {
+      color: pm25History.map(d => d.value > 37.5 ? '#ff3b3b' : (d.value > 15 ? '#ffe04b' : '#34d399'))
+    },
+    text: pm25History.map(d => `${d.value} µg/m³`),
+    textposition: 'auto'
   }], {
-    paper_bgcolor:'transparent', plot_bgcolor:'rgba(255,255,255,.02)', font:{ color:'#8899aa', family:'Sarabun' },
-    xaxis:{ tickfont:{size:11} }, yaxis:{ gridcolor:'#1e2535', title:'µg/m³', tickfont:{size:10} }, margin:{ l:40, r:20, t:10, b:40 }
-  }, { responsive:true, displayModeBar:false });
+    ...layoutBase,
+    title: { text: 'ค่าฝุ่น PM2.5 ล่าสุดรายจังหวัด (WAQI)', font: { size: 13, color: '#dce4f0' } },
+    xaxis: { gridcolor: '#1e2535' },
+    yaxis: { gridcolor: '#1e2535', title: 'µg/m³' },
+    shapes: [{ type: 'line', x0: -0.5, x1: pm25History.length - 0.5, y0: 37.5, y1: 37.5, line: { color: '#ff3b3b', width: 1.5, dash: 'dot' } }]
+  });
 
-  // ── PLOT 4: Stacked Bar (Macro & Micro) ──
-  const pastDays = daily.filter(d => d.isPast && d.lambdaNat !== null);
-  const fcstDays = daily.filter(d => d.isForecast && d.lambdaNat !== null);
-  
-  const tracePastR4 = {
-    x: pastDays.map(d=>d.date), y: pastDays.map(d=>d.lambdaR4),
-    type:'bar', name:'เขต 4 (ย้อนหลัง)', marker:{ color:'#ff6b1a' },
-    hovertemplate:'%{x}<br>เขต 4: %{y:.1f} ราย<extra></extra>'
-  };
-  const tracePastRest = {
-    x: pastDays.map(d=>d.date), y: pastDays.map(d=>d.lambdaNat - d.lambdaR4), // เอาประเทศ หัก เขต 4 ออก
-    type:'bar', name:'ภูมิภาคอื่น (ย้อนหลัง)', marker:{ color:'rgba(255,107,26,0.2)' },
-    hovertemplate:'%{x}<br>ภูมิภาคอื่น: %{y:.1f} ราย<extra></extra>'
-  };
-  
-  const traceFcstR4 = {
-    x: fcstDays.map(d=>d.date), y: fcstDays.map(d=>d.lambdaR4),
-    type:'bar', name:'เขต 4 (พยากรณ์)', marker:{ color:'#ffe04b' },
-    hovertemplate:'%{x}<br>เขต 4: %{y:.1f} ราย<extra></extra>'
-  };
-  const traceFcstRest = {
-    x: fcstDays.map(d=>d.date), y: fcstDays.map(d=>d.lambdaNat - d.lambdaR4), // เอาประเทศ หัก เขต 4 ออก
-    type:'bar', name:'ภูมิภาคอื่น (พยากรณ์)', marker:{ color:'rgba(255,224,75,0.2)' },
-    hovertemplate:'%{x}<br>ภูมิภาคอื่น: %{y:.1f} ราย<extra></extra>'
-  };
+  // 4. Plot Patient Forecast (Macro & Micro Stacked Bar)
+  const restNat = daily.map(d => Math.max(0, (d.lambdaNat ?? 0) - (d.lambdaR4 ?? 0)));
+  Plotly.newPlot('plot-patient', [
+    { x: daily.map(d => d.date), y: daily.map(d => d.lambdaR4), name: 'คาดการณ์ผู้ป่วย เขต 4', type: 'bar', marker: { color: '#ff6b1a' } },
+    { x: daily.map(d => d.date), y: restNat, name: 'คาดการณ์ผู้ป่วย ภาคอื่นๆ', type: 'bar', marker: { color: 'rgba(90, 106, 130, 0.4)' } }
+  ], {
+    ...layoutBase,
+    barmode: 'stack',
+    hovermode: 'x unified',
+    legend: { orientation: 'h', y: -0.15 },
+    xaxis: { gridcolor: '#1e2535' },
+    yaxis: { gridcolor: '#1e2535', title: 'ผู้ป่วยคาดการณ์ (ราย/วัน)' }
+  });
 
-  const lineNat = {
-    x: daily.map(d=>d.date), y: daily.map(d=>d.lambdaNat),
-    type:'scatter', mode:'lines+markers', name:'Total Expected (ประเทศ)',
-    line:{ color:'#00c8ff', width:2, shape:'spline' }, marker:{ size:4 },
-    hovertemplate:'%{x}<br>รวมประเทศ: %{y:.1f} ราย<extra></extra>'
-  };
-
-  Plotly.newPlot('plot-patient', [tracePastR4, tracePastRest, traceFcstR4, traceFcstRest, lineNat], {
-    paper_bgcolor:'transparent', plot_bgcolor:'rgba(255,255,255,.02)', font:{ color:'#8899aa', family:'Sarabun' },
-    hovermode:'x unified', barmode:'stack', // ซ้อนทับกัน
-    legend:{ orientation:'h', y:-0.15 },
-    xaxis:{ gridcolor:'#1e2535', tickangle:-30, tickfont:{size:11} },
-    yaxis:{ gridcolor:'#1e2535', title:'จำนวนคาดการณ์ (ราย/วัน)', rangemode:'tozero', tickfont:{size:11} },
-    margin:{ l:50, r:20, t:10, b:80 },
-    shapes:[{ type:'line', x0:todayStr, x1:todayStr, yref:'paper', y0:0, y1:1, line:{color:'#ffffff',width:1,dash:'dot'} }],
-    annotations:[{ x:todayStr, y:1, xref:'x', yref:'paper', text:'วันนี้', showarrow:false, font:{color:'#fff',size:10}, xanchor:'left' }]
-  }, { responsive:true, displayModeBar:false });
-
-  setProgress(100);
+  // Complete progress & hide loader smoothly
+  setProgress(100, '✨ โหลดข้อมูลและสร้างการแสดงผลเรียบร้อย');
   setTimeout(() => {
-    map.invalidateSize();
-    document.getElementById('loading-overlay').style.opacity = '0';
-    setTimeout(() => { document.getElementById('loading-overlay').style.display = 'none'; }, 500);
-  }, 400);
+    const loader = document.getElementById('loading-overlay');
+    loader.style.opacity = '0';
+    setTimeout(() => loader.style.display = 'none', 400);
+  }, 300);
 }
 
-main().catch(err => {
-  console.error(err);
-  document.getElementById('loading-steps').textContent = '❌ เกิดข้อผิดพลาด: ' + err.message;
-  document.getElementById('prog').style.background = '#ff3b3b';
-});
+window.addEventListener('DOMContentLoaded', main);
 </script>
 </body>
 </html>
