@@ -510,8 +510,8 @@ async function main() {
     `+ <span style="color:#00c8ff">0.0050</span>(PM2.5)`;
   document.getElementById('formula-concrete').innerHTML = formulaStr;
 
-  const statusEl = document.getElementById('model-status');
-  statusEl.innerHTML = `<img src="smart_sat_logo.png" class="status-logo" alt="SAT Logo"> <span style="font-size: 12px; font-weight: bold;">ตรวจจับเร็ว-ตอบโต้ทัน-ป้องกันได้</span>`;
+    const statusEl = document.getElementById('model-status');
+  statusEl.innerHTML = `<img src="smart_sat_logo.png" class="status-logo" alt="SAT Logo" style="height: 38px; width: auto; margin-right: 8px;"> <span style="font-size: 12px; font-weight: bold;">ตรวจจับเร็ว-ตอบโต้ทัน-ป้องกันได้</span>`;
   statusEl.style.borderColor = '#00ff88'; 
   statusEl.style.color = '#00ff88'; 
   statusEl.style.boxShadow = '0 0 12px rgba(0, 255, 136, 0.2)';
@@ -535,12 +535,13 @@ async function main() {
   });
 
   const todayData = daily.find(d => d.date === todayStr) ?? daily[daily.length - 1];
-  
+
   if (todayData) {
     document.getElementById('kpi-hi').textContent         = todayData.hi?.toFixed(1) ?? '--';
     document.getElementById('kpi-lambda-r4').textContent  = todayData.lambdaR4?.toFixed(2) ?? '--';
     document.getElementById('kpi-lambda-nat').textContent = todayData.lambdaNat?.toFixed(1) ?? '--';
-    
+
+    // แบ่งยอดลงแผนที่
     for (const prov in dailyByProv) {
         if (todayData.lambdaR4 > 0) dailyByProv[prov].todayLambda = todayData.lambdaR4 * (PROV_POP_RATIO[prov] || 0.125);
     }
@@ -564,86 +565,114 @@ async function main() {
 
   // PLOTS
   const COLORS = ['#ff6b1a','#00c8ff','#ffe04b','#a78bfa','#34d399','#fb7185','#60a5fa','#f97316'];
-  const layoutBase = {
-    paper_bgcolor: 'transparent',
-    plot_bgcolor: 'rgba(255,255,255,.02)',
-    font: { color: '#8899aa', family: 'Sarabun' },
-    margin: { t: 30, r: 20, b: 40, l: 40 }
+  const nowISO = new Date().toISOString().slice(0,16);
+
+  Plotly.newPlot('plot-heat', hourlyByProv.map((p, i) => ({
+    x: p.times, y: p.temps, type:'scatter', mode:'lines', name: p.name,
+    line:{ color: COLORS[i % COLORS.length], width:1.5, shape:'spline' }, hovertemplate: `%{y:.1f}°C<extra>${p.name}</extra>`
+  })), {
+    paper_bgcolor:'transparent', plot_bgcolor:'rgba(255,255,255,.02)', font:{ color:'#8899aa', family: 'Sarabun' },
+    hovermode:'x unified', legend:{ orientation:'h', y:-0.12 },
+    xaxis:{ gridcolor:'#1e2535', tickformat:'%d %b %H:%M', tickfont:{size:11} }, yaxis:{ gridcolor:'#1e2535', title:'°C', tickfont:{size:11} },
+    margin:{ l:50, r:20, t:10, b:80 },
+    shapes:[ { type:'line', x0:0, x1:1, xref:'paper', y0:40, y1:40, line:{color:'#ff3b3b',width:2,dash:'dash'} }, { type:'line', x0:nowISO, x1:nowISO, yref:'paper', y0:0, y1:1, line:{color:'#ffffff',width:1,dash:'dot'} } ]
+  }, { responsive: true, displayModeBar: false });
+
+  // ── [แก้ไขที่ 2] นำกราฟ Sun, UV, และ Rain (Bar) กลับมาพล็อตให้ครบถ้วน ──
+  const envTraces = [
+    { name:'ความชื้น (%)', data: daily.map(d=>d.rh), color:'#00c8ff', yaxis:'y1' },
+    { name:'ลม (km/h)', data: daily.map(d=>d.wind), color:'#34d399', yaxis:'y2' },
+    { name:'แสงแดด (hr)', data: daily.map(d=>d.sun), color:'#ffe04b', yaxis:'y2' },
+    { name:'UV Index', data: daily.map(d=>d.uv), color:'#a78bfa', yaxis:'y2' }
+  ].map(t => ({
+    x: daily.map(d=>d.date), y: t.data, type:'scatter', mode:'lines+markers', name: t.name, yaxis: t.yaxis,
+    line:{ color:t.color, width:2, shape:'spline' }, marker:{ size:4 }, hovertemplate:`%{y:.1f}<extra>${t.name}</extra>`
+  }));
+
+  // เพิ่มแท่งกราฟฝน (คูณสเกลภาพให้เห็นชัดเจนบนแกน 0-100 แต่ไม่กระทบสมการ)
+  envTraces.push({
+    x: daily.map(d=>d.date), y: daily.map(d=>d.rain * 15),
+    type:'bar', name:'ฝนตก', yaxis:'y1',
+    marker:{ color:'rgba(0,180,255,.25)', line:{color:'rgba(0,180,255,.5)',width:1} },
+    hovertemplate:`%{x}<br>ฝนตก<extra></extra>`
+  });
+
+  Plotly.newPlot('plot-env', envTraces, {
+    paper_bgcolor:'transparent', plot_bgcolor:'rgba(255,255,255,.02)', font:{ color:'#8899aa', family:'Sarabun' },
+    hovermode:'x unified', barmode:'overlay', legend:{ orientation:'h', y:-0.2 },
+    xaxis:{ gridcolor:'#1e2535', tickfont:{size:10} }, 
+    yaxis:{ gridcolor:'#1e2535', title:'%', tickfont:{size:10}, side:'left' }, 
+    yaxis2:{ overlaying:'y', side:'right', title:'ลม/แดด/UV', gridcolor:'transparent', tickfont:{size:10} },
+    margin:{ l:40, r:40, t:10, b:60 },
+    shapes:[{ type:'line', x0:todayStr, x1:todayStr, yref:'paper', y0:0, y1:1, line:{color:'#ffffff',width:1,dash:'dot'} }]
+  }, { responsive:true, displayModeBar:false });
+
+  Plotly.newPlot('plot-pm25', [{
+    x: pm25History.map(d=>d.city), y: pm25History.map(d=>d.value), type:'bar',
+    marker:{ color: pm25History.map(d => d.value < 25 ? '#34d399' : d.value < 50 ? '#ffe04b' : d.value < 75 ? '#ff8c00' : '#ff3b3b') },
+    text: pm25History.map(d=>`${d.value}`), textposition:'outside', hovertemplate:'%{x}<br>PM2.5: %{y}<extra></extra>'
+  }], {
+    paper_bgcolor:'transparent', plot_bgcolor:'rgba(255,255,255,.02)', font:{ color:'#8899aa', family:'Sarabun' },
+    xaxis:{ tickfont:{size:11} }, yaxis:{ gridcolor:'#1e2535', title:'µg/m³', tickfont:{size:10} }, margin:{ l:40, r:20, t:10, b:40 }
+  }, { responsive:true, displayModeBar:false });
+
+  // ── PLOT 4: Stacked Bar (Macro & Micro) ──
+  const pastDays = daily.filter(d => d.isPast && d.lambdaNat !== null);
+  const fcstDays = daily.filter(d => d.isForecast && d.lambdaNat !== null);
+
+  const tracePastR4 = {
+    x: pastDays.map(d=>d.date), y: pastDays.map(d=>d.lambdaR4),
+    type:'bar', name:'เขต 4 (ย้อนหลัง)', marker:{ color:'#ff6b1a' },
+    hovertemplate:'%{x}<br>เขต 4: %{y:.1f} ราย<extra></extra>'
+  };
+  const tracePastRest = {
+    x: pastDays.map(d=>d.date), y: pastDays.map(d=>d.lambdaNat - d.lambdaR4), // เอาประเทศ หัก เขต 4 ออก
+    type:'bar', name:'ภูมิภาคอื่น (ย้อนหลัง)', marker:{ color:'rgba(255,107,26,0.2)' },
+    hovertemplate:'%{x}<br>ภูมิภาคอื่น: %{y:.1f} ราย<extra></extra>'
   };
 
-  // 1. Plot Heat (Hourly Forecast)
-  Plotly.newPlot('plot-heat', hourlyByProv.map((p, i) => ({
-    x: p.times, y: p.temps, type: 'scatter', mode: 'lines', name: p.name,
-    line: { color: COLORS[i % COLORS.length], width: 1.5, shape: 'spline' },
-    hovertemplate: `%{y:.1f}°C<extra>${p.name}</extra>`
-  })), {
-    ...layoutBase,
-    hovermode: 'x unified',
-    legend: { orientation: 'h', y: -0.15 },
-    xaxis: { gridcolor: '#1e2535', tickformat: '%d %b %H:%M', tickfont: { size: 11 } },
-    yaxis: { gridcolor: '#1e2535', title: 'Apparent Temp (°C)' },
-    shapes: [
-      { type: 'line', x0: startStr, x1: endStr, y0: 40, y1: 40, line: { color: '#ff3b3b', width: 1.5, dash: 'dot' } },
-      { type: 'line', x0: todayStr, x1: todayStr, y0: 0, y1: 60, line: { color: '#ffffff', width: 1, dash: 'dash' } }
-    ]
-  });
+  const traceFcstR4 = {
+    x: fcstDays.map(d=>d.date), y: fcstDays.map(d=>d.lambdaR4),
+    type:'bar', name:'เขต 4 (พยากรณ์)', marker:{ color:'#ffe04b' },
+    hovertemplate:'%{x}<br>เขต 4: %{y:.1f} ราย<extra></extra>'
+  };
+  const traceFcstRest = {
+    x: fcstDays.map(d=>d.date), y: fcstDays.map(d=>d.lambdaNat - d.lambdaR4), // เอาประเทศ หัก เขต 4 ออก
+    type:'bar', name:'ภูมิภาคอื่น (พยากรณ์)', marker:{ color:'rgba(255,224,75,0.2)' },
+    hovertemplate:'%{x}<br>ภูมิภาคอื่น: %{y:.1f} ราย<extra></extra>'
+  };
 
-  // 2. Plot Env (Daily Environmental Factors)
-  Plotly.newPlot('plot-env', [
-    { x: daily.map(d => d.date), y: daily.map(d => d.rh), name: 'ความชื้น (%)', type: 'scatter', mode: 'lines+markers', line: { color: '#00c8ff' } },
-    { x: daily.map(d => d.date), y: daily.map(d => d.wind), name: 'ความเร็วลม (km/h)', type: 'scatter', mode: 'lines+markers', line: { color: '#ffe04b' } },
-    { x: daily.map(d => d.date), y: daily.map(d => d.uv), name: 'UV Index', type: 'scatter', mode: 'lines+markers', line: { color: '#a78bfa' } }
-  ], {
-    ...layoutBase,
-    title: { text: 'ตัวแปรอุตุนิยมวิทยาเฉลี่ยรายวัน', font: { size: 13, color: '#dce4f0' } },
-    hovermode: 'x unified',
-    legend: { orientation: 'h', y: -0.2 },
-    xaxis: { gridcolor: '#1e2535' },
-    yaxis: { gridcolor: '#1e2535' }
-  });
+  const lineNat = {
+    x: daily.map(d=>d.date), y: daily.map(d=>d.lambdaNat),
+    type:'scatter', mode:'lines+markers', name:'Total Expected (ประเทศ)',
+    line:{ color:'#00c8ff', width:2, shape:'spline' }, marker:{ size:4 },
+    hovertemplate:'%{x}<br>รวมประเทศ: %{y:.1f} ราย<extra></extra>'
+  };
 
-  // 3. Plot PM2.5 (WAQI Realtime Stations)
-  Plotly.newPlot('plot-pm25', [{
-    x: pm25History.map(d => d.name),
-    y: pm25History.map(d => d.value),
-    type: 'bar',
-    marker: {
-      color: pm25History.map(d => d.value > 37.5 ? '#ff3b3b' : (d.value > 15 ? '#ffe04b' : '#34d399'))
-    },
-    text: pm25History.map(d => `${d.value} µg/m³`),
-    textposition: 'auto'
-  }], {
-    ...layoutBase,
-    title: { text: 'ค่าฝุ่น PM2.5 ล่าสุดรายจังหวัด (WAQI)', font: { size: 13, color: '#dce4f0' } },
-    xaxis: { gridcolor: '#1e2535' },
-    yaxis: { gridcolor: '#1e2535', title: 'µg/m³' },
-    shapes: [{ type: 'line', x0: -0.5, x1: pm25History.length - 0.5, y0: 37.5, y1: 37.5, line: { color: '#ff3b3b', width: 1.5, dash: 'dot' } }]
-  });
+  Plotly.newPlot('plot-patient', [tracePastR4, tracePastRest, traceFcstR4, traceFcstRest, lineNat], {
+    paper_bgcolor:'transparent', plot_bgcolor:'rgba(255,255,255,.02)', font:{ color:'#8899aa', family:'Sarabun' },
+    hovermode:'x unified', barmode:'stack', // ซ้อนทับกัน
+    legend:{ orientation:'h', y:-0.15 },
+    xaxis:{ gridcolor:'#1e2535', tickangle:-30, tickfont:{size:11} },
+    yaxis:{ gridcolor:'#1e2535', title:'จำนวนคาดการณ์ (ราย/วัน)', rangemode:'tozero', tickfont:{size:11} },
+    margin:{ l:50, r:20, t:10, b:80 },
+    shapes:[{ type:'line', x0:todayStr, x1:todayStr, yref:'paper', y0:0, y1:1, line:{color:'#ffffff',width:1,dash:'dot'} }],
+    annotations:[{ x:todayStr, y:1, xref:'x', yref:'paper', text:'วันนี้', showarrow:false, font:{color:'#fff',size:10}, xanchor:'left' }]
+  }, { responsive:true, displayModeBar:false });
 
-  // 4. Plot Patient Forecast (Macro & Micro Stacked Bar)
-  const restNat = daily.map(d => Math.max(0, (d.lambdaNat ?? 0) - (d.lambdaR4 ?? 0)));
-  Plotly.newPlot('plot-patient', [
-    { x: daily.map(d => d.date), y: daily.map(d => d.lambdaR4), name: 'คาดการณ์ผู้ป่วย เขต 4', type: 'bar', marker: { color: '#ff6b1a' } },
-    { x: daily.map(d => d.date), y: restNat, name: 'คาดการณ์ผู้ป่วย ภาคอื่นๆ', type: 'bar', marker: { color: 'rgba(90, 106, 130, 0.4)' } }
-  ], {
-    ...layoutBase,
-    barmode: 'stack',
-    hovermode: 'x unified',
-    legend: { orientation: 'h', y: -0.15 },
-    xaxis: { gridcolor: '#1e2535' },
-    yaxis: { gridcolor: '#1e2535', title: 'ผู้ป่วยคาดการณ์ (ราย/วัน)' }
-  });
-
-  // Complete progress & hide loader smoothly
-  setProgress(100, '✨ โหลดข้อมูลและสร้างการแสดงผลเรียบร้อย');
+  setProgress(100);
   setTimeout(() => {
-    const loader = document.getElementById('loading-overlay');
-    loader.style.opacity = '0';
-    setTimeout(() => loader.style.display = 'none', 400);
-  }, 300);
+    map.invalidateSize();
+    document.getElementById('loading-overlay').style.opacity = '0';
+    setTimeout(() => { document.getElementById('loading-overlay').style.display = 'none'; }, 500);
+  }, 400);
 }
 
-window.addEventListener('DOMContentLoaded', main);
+main().catch(err => {
+  console.error(err);
+  document.getElementById('loading-steps').textContent = '❌ เกิดข้อผิดพลาด: ' + err.message;
+  document.getElementById('prog').style.background = '#ff3b3b';
+});
 </script>
 </body>
 </html>
