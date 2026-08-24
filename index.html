@@ -245,8 +245,8 @@
       </div>
       <div class="coef-card" style="border-color: var(--accent3);">
         <div class="coef-name" style="color: var(--accent3);">Model Error (RMSE / MAE)</div>
-        <div class="coef-val" id="error-val" style="color: var(--accent3);">0.562 / 0.353</div>
-        <div class="coef-desc">ราย/วัน (Fitted by NB2)</div>
+        <div class="coef-val" id="error-val" style="color: var(--accent3);">4.183 / 2.534</div>
+        <div class="coef-desc">ราย/สัปดาห์ (Fitted by NB2)</div>
       </div>
     </div>
   </div>
@@ -401,12 +401,12 @@ function avg(arr)   { return arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : 
 function calcLambdaDaily(hi, hiLag, wind, rainDay, pm25) {
   if (hi === null) return { national: null, region4: null };
 
-  const intercept = -14.3268; 
-  const coefHI    = 0.1748;   
-  const coefHILag = 0.2450;   
-  const coefWind  = 0.1229;   
-  const coefRain  = -0.0662;  
-  const coefPM25  = 0.005;    
+  const intercept = -11.5269; 
+  const coefHI    = 0.1750;   
+  const coefHILag = 0.1339;   
+  const coefWind  = 0.0959;   
+  const coefRain  = -0.0715;  
+  const coefPM25  = 0.0050;    
   
   const hiV  = hi;
   const hiL  = hiLag  ?? hi;
@@ -500,12 +500,12 @@ async function main() {
   });
 
   const formulaStr = 
-    `ln(λ) = <span style="color:#ff3b3b">-14.327</span> ` +
-    `+ <span style="color:#00c8ff">0.175</span>(HI) ` +
-    `+ <span style="color:#00c8ff">0.245</span>(HI_lag) ` +
-    `+ <span style="color:#00c8ff">0.123</span>(Wind) ` +
-    `- <span style="color:#00c8ff">0.066</span>(Rain) ` +
-    `+ <span style="color:#00c8ff">0.005</span>(PM2.5)`;
+    `ln(λ) = <span style="color:#ff3b3b">-11.5269</span> ` +
+    `+ <span style="color:#00c8ff">0.1750</span>(HI) ` +
+    `+ <span style="color:#00c8ff">0.1339</span>(HI_lag) ` +
+    `+ <span style="color:#00c8ff">0.0959</span>(Wind) ` +
+    `- <span style="color:#00c8ff">0.0715</span>(Rain) ` +
+    `+ <span style="color:#00c8ff">0.0050</span>(PM2.5)`;
   document.getElementById('formula-concrete').innerHTML = formulaStr;
 
   // ── [แก้ไขที่ 3] ขยายขนาดโลโก้ SAT ทางด้านขวาให้โดดเด่นขึ้น ──
