@@ -253,7 +253,7 @@
     <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px;">
       <div>
         <div class="coef-name" style="color: var(--accent3); font-weight: bold;">ประสิทธิภาพโมเดล (Model Performance)</div>
-        <div class="coef-val" id="error-val" style="color: var(--accent3);">4.183 / 2.534</div>
+        <div class="coef-val" id="error-val" style="color: var(--accent3);">4.188 / 2.549</div>
         <div class="coef-desc">RMSE / MAE (ราย/สัปดาห์ Fitted by NB2)</div>
       </div>
     </div>
@@ -267,17 +267,17 @@
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-top: 12px; background: rgba(0, 0, 0, 0.35); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border);">
         <div>
           <div class="coef-name">AIC</div>
-          <div class="coef-val" style="font-size: 16px; color: var(--text);">313.129</div>
+          <div class="coef-val" style="font-size: 16px; color: var(--text);">315.015</div>
           <div class="coef-desc" style="font-size: 10px;">Akaike Info Criterion</div>
         </div>
         <div>
           <div class="coef-name">Log-Likelihood</div>
-          <div class="coef-val" style="font-size: 16px; color: var(--text);">-151.56</div>
+          <div class="coef-val" style="font-size: 16px; color: var(--text);">-152.51</div>
           <div class="coef-desc" style="font-size: 10px;">Log-Likelihood Value</div>
         </div>
         <div>
           <div class="coef-name">Pseudo R²</div>
-          <div class="coef-val" style="font-size: 16px; color: var(--accent2);">0.09215</div>
+          <div class="coef-val" style="font-size: 16px; color: var(--accent2);">0.08650</div>
           <div class="coef-desc" style="font-size: 10px;">McFadden's Pseudo R²</div>
         </div>
       </div>
@@ -435,11 +435,11 @@ function avg(arr)   { return arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : 
 function calcLambdaDaily(hi, hiLag, wind, rainDay, pm25) {
   if (hi === null) return { national: null, region4: null };
 
-  const intercept = -11.5269; 
+  const intercept = -11.6405; 
   const coefHI    = 0.1750;   
-  const coefHILag = 0.1339;   
-  const coefWind  = 0.0959;   
-  const coefRain  = -0.0715;  
+  const coefHILag = 0.1392;   
+  const coefWind  = 0.0892;   
+  const coefRain  = -0.0708;  
   const coefPM25  = 0.0050;   
   
   const hiV  = hi;
