@@ -577,9 +577,14 @@ async function main() {
   }
   document.getElementById('kpi-pm25').textContent = pm25Avg?.toFixed(1) ?? 'N/A';
 
-  // MAP
+ // MAP
   const map = L.map('map-container').setView([14.3, 100.7], 8);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap', subdomains: 'abcd', maxZoom: 20 }).addTo(map);
+  
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=cb1_3jtj_1_a57e7a7513347de85599f9dd, { 
+      attribution: '&copy; <a href="https://basemaps.cartocdn.com/rastertiles/voyager/%7Bz%7D/%7Bx%7D/%7By%7D.png?key=cb1_3jtj_1_a57e7a7513347de85599f9dd">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>', 
+      subdomains: 'abcd', 
+      maxZoom: 20 
+  }).addTo(map);
 
   locEntries.forEach(([prov, coords]) => {
       const pData = dailyByProv[prov];
