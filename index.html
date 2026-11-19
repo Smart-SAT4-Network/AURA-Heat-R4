@@ -632,11 +632,14 @@ async function main() {
 
   // เพิ่มแท่งกราฟฝน (คูณสเกลภาพให้เห็นชัดเจนบนแกน 0-100 แต่ไม่กระทบสมการ)
   envTraces.push({
-    x: daily.map(d=>d.date), y: daily.map(d=>d.rain * 15),
-    type:'bar', name:'ฝนตก', yaxis:'y1',
-    marker:{ color:'rgba(0,180,255,.25)', line:{color:'rgba(0,180,255,.5)',width:1} },
-    hovertemplate:`%{x}<br>ฝนตก<extra></extra>`
-  });
+  x: daily.map(d => d.date),
+  y: daily.map(d => d.rainMm),
+  type: 'bar',
+  name: 'ฝน (mm/วัน)',
+  yaxis: 'y2',
+  marker: { color: 'rgba(0,180,255,.35)', line: { color: 'rgba(0,180,255,.7)', width: 1 } },
+  hovertemplate: '%{y:.1f} mm<extra>ฝน</extra>'
+});
 
   Plotly.newPlot('plot-env', envTraces, {
   paper_bgcolor:'transparent', plot_bgcolor:'rgba(255,255,255,.02)', font:{ color:'#8899aa', family:'Sarabun' },
