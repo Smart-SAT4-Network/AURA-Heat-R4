@@ -633,7 +633,7 @@ async function main() {
   // เพิ่มแท่งกราฟฝน (คูณสเกลภาพให้เห็นชัดเจนบนแกน 0-100 แต่ไม่กระทบสมการ)
   envTraces.push({
   x: daily.map(d => d.date),
-  y: daily.map(d => d.rainMm),
+  y: daily.map(d => d.rain),
   type: 'bar',
   name: 'ฝน (mm/วัน)',
   yaxis: 'y2',
