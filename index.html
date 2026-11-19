@@ -639,14 +639,14 @@ async function main() {
   });
 
   Plotly.newPlot('plot-env', envTraces, {
-    paper_bgcolor:'transparent', plot_bgcolor:'rgba(255,255,255,.02)', font:{ color:'#8899aa', family:'Sarabun' },
-    hovermode:'x unified', barmode:'overlay', legend:{ orientation:'h', y:-0.2 },
-    xaxis:{ gridcolor:'#1e2535', tickfont:{size:10} }, 
-    yaxis:{ gridcolor:'#1e2535', title:'%', tickfont:{size:10}, side:'left' }, 
-    yaxis2:{ overlaying:'y', side:'right', title:'ลม/แดด/UV', gridcolor:'transparent', tickfont:{size:10} },
-    margin:{ l:40, r:40, t:10, b:60 },
-    shapes:[{ type:'line', x0:todayStr, x1:todayStr, yref:'paper', y0:0, y1:1, line:{color:'#ffffff',width:1,dash:'dot'} }]
-  }, { responsive:true, displayModeBar:false });
+  paper_bgcolor:'transparent', plot_bgcolor:'rgba(255,255,255,.02)', font:{ color:'#8899aa', family:'Sarabun' },
+  hovermode:'x unified', barmode:'overlay', legend:{ orientation:'h', y:-0.2 },
+  xaxis:{ gridcolor:'#1e2535', tickfont:{size:10} },
+  yaxis:{ gridcolor:'#1e2535', title:'ความชื้น (%)', tickfont:{size:10}, side:'left' },
+  yaxis2:{ overlaying:'y', side:'right', title:'ลม (km/h) / แดด (hr) / UV / ฝน (mm)', gridcolor:'transparent', rangemode:'tozero', tickfont:{size:10} },
+  margin:{ l:40, r:50, t:10, b:60 },
+  shapes:[{ type:'line', x0:todayStr, x1:todayStr, yref:'paper', y0:0, y1:1, line:{color:'#ffffff',width:1,dash:'dot'} }]
+}, { responsive:true, displayModeBar:false });
 
   Plotly.newPlot('plot-pm25', [{
     x: pm25History.map(d=>d.city), y: pm25History.map(d=>d.value), type:'bar',
