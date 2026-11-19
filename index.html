@@ -521,14 +521,20 @@ async function main() {
     });
   });
 
-  const daily = Object.keys(dailyAgg).sort().map(date => {
-    const ag = dailyAgg[date];
-    return {
-      date, hi: avg(ag.hi), rh: avg(ag.rh), wind: avg(ag.wind),
-      sun: avg(ag.sun), rain: ag.precip.some(v=>v>0.5) ? 1 : 0, uv: avg(ag.uv),
-      isPast: date < todayStr, isForecast: date >= todayStr
-    };
-  });
+ const daily = Object.keys(dailyAgg).sort().map(date => {
+  const ag = dailyAgg[date];
+  return {
+    date,
+    hi:     avg(ag.hi),
+    rh:     avg(ag.rh),
+    wind:   avg(ag.wind),
+    sun:    avg(ag.sun),
+    rain:   avg(ag.precip),             
+    uv:     avg(ag.uv),
+    isPast: date < todayStr,
+    isForecast: date >= todayStr
+  };
+});
 
   const formulaStr = 
     `ln(λ) = <span style="color:#00c8ff">-11.6405</span> ` +
@@ -557,11 +563,12 @@ async function main() {
   setProgress(75, '📊 กำลังคำนวณ λ แบบ Dual Scale...');
 
   daily.forEach((d, i) => {
-    const hiLag = i > 0 ? daily[i-1].hi : d.hi;
-    const res = calcLambdaDaily(d.hi, hiLag, d.wind, d.rain, pm25Avg);
-    d.lambdaNat = res.national;
-    d.lambdaR4  = res.region4;
-  });
+  const hiLag  = i > 0 ? daily[i-1].hi : d.hi;
+  const rainIn = Math.min(d.rain ?? 0, 13.4);   // จำกัดไม่ให้เกินช่วงที่เทรน
+  const res = calcLambdaDaily(d.hi, hiLag, d.wind, rainIn, pm25Avg);
+  d.lambdaNat = res.national;
+  d.lambdaR4  = res.region4;
+});
 
   const todayData = daily.find(d => d.date === todayStr) ?? daily[daily.length - 1];
 
